@@ -48,6 +48,9 @@
 
       const width = window.innerWidth;
       const height = window.innerHeight;
+      function getRand(range) {
+          return (Math.floor(Math.random() * range));
+      };
 
       var stage = new Konva.Stage({
         container: 'container',
@@ -68,12 +71,49 @@
       });
       layer.add(instructions);
 
+      // Make node group elements
+      var toolNode = {
+        width: 300,
+        height: 120,
+        cornerRadius: 15,
+        fill: 'white',
+        names: ['Revit', 'Lumion', 'Enscape', "AutoCad", 'Sketchup'],
+      };
+
       stage.on('dblclick dbltap', function () {
         // add a new shape
+        var centerX = toolNode.width / 2;
+        var centerY = toolNode.height / 2;
+        console.log(centerX, centerY);
         var newNode = new Konva.Group({
-          x: stage.getPointerPosition().x,
-          y: stage.getPointerPosition().y,
+          x: stage.getPointerPosition().x - centerX,
+          y: stage.getPointerPosition().y - centerY,
+          draggable: true,
         });
+        var toolRect = new Konva.Rect({
+          width: toolNode.width,
+          height: toolNode.height,
+          cornerRadius: toolNode.cornerRadius,
+          fill: toolNode.fill,
+        });
+        var toolIcon = new Konva.Rect({
+          width: 80,
+          height: 80,
+          x: 20,
+          y: 20,
+          cornerRadius: toolNode.cornerRadius,
+          fill: '#ddd',
+        });
+        var toolText = new Konva.Text({
+            text: toolNode.names[getRand(toolNode.names.length)],
+            fontSize: 30,
+            x: 120,
+            y: 45,
+            fill: 'black',
+        })
+        newNode.add(toolRect);
+        newNode.add(toolIcon);
+        newNode.add(toolText);
         layer.add(newNode);
       });
 
