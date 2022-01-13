@@ -32,10 +32,21 @@
       #menu button:hover {
         background-color: lightgray;
       }
+
+      #instructions {
+        font-family: 'Poppins';
+        font-size: 25px;
+        font-weight: 400;
+        margin: 20px;
+        color: black;
+        position: absolute;
+        z-index: 100;
+      }
     </style>
   </head>
 
   <body>
+    <h1 id='instructions'>Double-click to search tools</h1>
     <div id="container"></div>
     <div id="menu">
       <div>
@@ -56,20 +67,16 @@
         container: 'container',
         width: width,
         height: height,
+        draggable: true,
       });
 
-      var layer = new Konva.Layer();
+      var layer = new Konva.Layer({
+        draggable: true,
+        scaleX: 1,
+        scaleY: 1,
+      });
+      var toolBar = new Konva.Layer();
       stage.add(layer);
-
-      // add instruction text
-      var instructions = new Konva.Text({
-        text: "Double-click to search tools",
-        fontSize: 25,
-        x: 20,
-        y: 20,
-        fill: 'black',
-      });
-      layer.add(instructions);
 
       // Make node group elements
       var toolNode = {
@@ -77,14 +84,19 @@
         height: 120,
         cornerRadius: 15,
         fill: 'white',
+        selectColor: '#ec008c',
         names: ['Revit', 'Lumion', 'Enscape', "AutoCad", 'Sketchup'],
+
       };
 
       stage.on('dblclick dbltap', function () {
         // add a new shape
+        var state = {
+          isSelected: false,
+        }
         var centerX = toolNode.width / 2;
         var centerY = toolNode.height / 2;
-        console.log(centerX, centerY);
+        //console.log(centerX, centerY);
         var newNode = new Konva.Group({
           x: stage.getPointerPosition().x - centerX,
           y: stage.getPointerPosition().y - centerY,
@@ -95,6 +107,7 @@
           height: toolNode.height,
           cornerRadius: toolNode.cornerRadius,
           fill: toolNode.fill,
+          stroke: 'grey',
         });
         var toolIcon = new Konva.Rect({
           width: 80,
@@ -103,6 +116,7 @@
           y: 20,
           cornerRadius: toolNode.cornerRadius,
           fill: '#ddd',
+          listening: false,
         });
         var toolText = new Konva.Text({
             text: toolNode.names[getRand(toolNode.names.length)],
@@ -110,14 +124,26 @@
             x: 120,
             y: 45,
             fill: 'black',
+            listening: false,
         })
         newNode.add(toolRect);
         newNode.add(toolIcon);
         newNode.add(toolText);
+        toolRect.on('click', function () {
+          this.stroke(state.isSelected ? 'grey' : toolNode.selectColor);
+          //console.log(state.isSelected);
+          state.isSelected = state.isSelected ? false : true;
+        });
+
         layer.add(newNode);
       });
 
-      // setup menu
+      stage.on('click', function() {
+        var rects = layer.find('Rect');
+        
+      })
+      /*
+      // setup menu (tutorial)
       let currentShape;
       var menuNode = document.getElementById('menu');
       document.getElementById('pulse-button').addEventListener('click', () => {
@@ -155,6 +181,7 @@
         menuNode.style.left =
           containerRect.left + stage.getPointerPosition().x + 4 + 'px';
       });
+      */
 
     </script>
   </body>
