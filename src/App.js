@@ -1,456 +1,197 @@
-import React, {Component, useRef} from 'react'
-import { Stage, Layer, Rect, Group, Text, Circle, Line} from "react-konva";
-import Konva from 'konva';
+import React, { useState } from 'react';
+import { Stage, Layer, Rect, Text, Line, Group } from 'react-konva';
+import { Border } from "./Border";
+import { INITIAL_STATE, NODE_SIZE } from './NodeConfig';
 import './App.css';
-import { render } from '@testing-library/react';
+
+function createConnectionPoints(source, destination, control1=null, control2=null) {
+  if (!control1 || !control2) {
+    return [source.x, source.y, destination.x, destination.y];
+  }
+  return [source.x, source.y, control1.x, control1.y, control2.x, control2.y, destination.x, destination.y];
+}
+
+//forked from codesandbox -> checks for intersection within full size node, TODO change to anchor areas 
+function hasIntersection(position, node) {
+  return !(
+    node.x > position.x ||
+    node.x + NODE_SIZE.width < position.x ||
+    node.y > position.y ||
+    node.y + NODE_SIZE.height < position.y
+  );
+}
+
+function detectConnection(position, id, nodes) {
+  const intersectingNode = Object.keys(nodes).find((key) => {
+    return key !== id && hasIntersection(position, nodes[key]);
+  });
+  if (intersectingNode) {
+    return intersectingNode;
+  }
+  return null;
+}
 
 const App = () => {
-  var width = window.innerWidth;
-  var height = window.innerHeight;
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [connectionPreview, setConnectionPreview] = useState(null);
+  const [connections, setConnections] = useState([]);
+  const [nodes, setNodes] = useState(INITIAL_STATE.nodes);
 
-  var stage = new Konva.Stage({
-    container: 'container',
-    width: width,
-    height: height,
-  });
-
-  var layer = new Konva.Layer();
-  stage.add(layer);
-
-  // add default shape
-  var shape = new Konva.Circle({
-    x: stage.width() / 2,
-    y: stage.height() / 2,
-    radius: 50,
-    fill: 'red',
-    shadowBlur: 10,
-  });
-  layer.add(shape);
-
-  stage.on('dblclick dbltap', function () {
-    // add a new shape
-    var newShape = new Konva.Circle({
-      x: stage.getPointerPosition().x,
-      y: stage.getPointerPosition().y,
-      radius: 10 + Math.random() * 30,
-      fill: Konva.Util.getRandomColor(),
-      shadowBlur: 10,
-    });
-    layer.add(newShape);
-  });
-
-  // setup menu
-  let currentShape;
-  var menuNode = document.getElementById('menu');
-  document.getElementById('pulse-button').addEventListener('click', () => {
-    currentShape.to({
-      scaleX: 2,
-      scaleY: 2,
-      onFinish: () => {
-        currentShape.to({ scaleX: 1, scaleY: 1 });
-      },
-    });
-  });
-
-  document.getElementById('delete-button').addEventListener('click', () => {
-    currentShape.destroy();
-  });
-
-  window.addEventListener('click', () => {
-    // hide menu
-    menuNode.style.display = 'none';
-  });
-
-  stage.on('contextmenu', function (e) {
-    // prevent default behavior
-    e.evt.preventDefault();
-    if (e.target === stage) {
-      // if we are on empty place of the stage we will do nothing
-      return;
+  function handleSelection(id) {
+    if (selectedNode === id) {
+      setSelectedNode(null);
+    } else {
+      setSelectedNode(id);
     }
-    currentShape = e.target;
-    // show menu
-    menuNode.style.display = 'initial';
-    var containerRect = stage.container().getBoundingClientRect();
-    menuNode.style.top =
-      containerRect.top + stage.getPointerPosition().y + 4 + 'px';
-    menuNode.style.left =
-      containerRect.left + stage.getPointerPosition().x + 4 + 'px';
-  });
-}
+  }
 
-export default App;
-
-/*const Dialog = () => {
-  return (
-      <div className="dialog">
-          <div>
-              <h2>Search</h2>
-          </div>
-          <div>
-              <p>Rhino</p>
-              <p>Revit</p>
-          </div>
-      </div>
-  )
-}
-const handleDblClick = () => {
-  layer2.add(<ColoredRect/>) 
-}
-class ColoredRect extends React.Component {
-  state = {
-    color: 'green'
-  };
-  handleClick = () => {
-    this.setState({
-      color: Konva.Util.getRandomColor()
+  function handleNodeDrag(e, key) {
+    const position = e.target.position();
+    setNodes({
+      ...nodes,
+      [key]: {
+        ...nodes[key],
+        ...position
+      }
     });
-  };
-  render() {
-    return (
-      <Rect
-        x={20}
-        y={20}
-        width={50}
-        height={50}
-        fill={this.state.color}
-        shadowBlur={5}
-        onClick={this.handleClick}
+  }
+
+  function handleAnchorDragStart(e) {
+    const position = e.target.position();
+    setConnectionPreview(
+      <Line
+        x={position.x}
+        y={position.y}
+        points={createConnectionPoints(position, position)}
+        stroke={NODE_SIZE.selectFill}
+        strokeWidth={3}
       />
     );
   }
-}
 
-class App extends Component {
-
-  constructor(props) {
-    super(props);
-    this.state = {
-      layerX: 0,
-      layerY: 0,
-      layerScale: 1,
-      groups: [],
-      points: [],
-      paths: [],
-      isDragging: false,
-      isSelected: false,
-      isHover: false
+  function getMousePos(e) {
+    const position = e.target.position();
+    const stage = e.target.getStage();
+    const pointerPosition = stage.getPointerPosition();
+    return {
+      x: pointerPosition.x - position.x,
+      y: pointerPosition.y - position.y
     };
   }
-  
-  toolNode = {
-    name: 'Enscape',
-    width:300,
-    height:120,
-    selectColor:'#ec008c',
-    radius:8
-  };
 
-    render() {
-    return (
-      <main className='app'>
-        <Stage 
-          width={window.innerWidth} 
-          height={window.innerHeight} 
-          ref={'stageRef'}
-          >
-          <Layer
-            scaleX={this.state.layerScale}
-            scaleY={this.state.layerScale}
-            x={this.state.layerX}
-            y={this.state.layerY}
-            
-            onDragEnd={() => {
-              this.setState({
-                  layerX: this.refs.layer2.x(),
-                  layerY: this.refs.layer2.y()
-              })
-            }}
-            onDblClick = {handleDblClick}
-          ref="layer2"
-          >
-            <Text text="Double-click to search tools" fontSize={25} x={20} y={20} />
-            <ColoredRect />
-            {this.state.groups.map(eachGroup => {
-              return (
-                <Group
-                   
-                  onDragStart={() => {
-                    this.setState({
-                      isDragging: true
-                    });
-                  }}
-                  onDragEnd={e => {
-                    this.setState({
-                      isDragging: false,
-                      x: e.target.x(),
-                      y: e.target.y()
-                    });
-                  }}
-
-                  x={250}
-                  y={250}
-                  name={eachGroup.name}
-                  ref={eachGroup.ref}
-                  draggable
-
-                  onClick={() => {
-                    this.setState({
-                      isSelected: this.state.isSelected ? false : true,
-                    })
-                  }}>
-                  <Group visible={this.state.isSelected ? true : false} name='circleGroup'>
-                    <Circle
-                      name='top'
-                      x={(this.toolNode.width / 2)}
-                      y={-this.toolNode.radius * 2}
-                      radius={this.toolNode.radius}
-                      fill={this.toolNode.selectColor}
-                    />
-                    <Circle
-                      name='bot'
-                      x={(this.toolNode.width / 2)}
-                      y={this.toolNode.height + this.toolNode.radius * 2}
-                      radius={this.toolNode.radius}
-                      fill={this.toolNode.selectColor}
-                    />
-                    <Circle
-                      name='left'
-                      x={- this.toolNode.radius * 2}
-                      y={this.toolNode.height/2}
-                      radius={this.toolNode.radius}
-                      fill={this.toolNode.selectColor}
-                    />
-                    <Circle
-                      name='right'
-                      x={(this.toolNode.width) + this.toolNode.radius * 2}
-                      y={this.toolNode.height/2}
-                      radius={this.toolNode.radius}
-                      fill={this.toolNode.selectColor}
-                    />
-                  </Group>
-
-                  <Rect
-                    width={this.toolNode.width}
-                    height={this.toolNode.height}
-                    cornerRadius={25}
-                    fill={"white"}
-                    stroke={this.toolNode.selectColor}
-                    strokeWidth={1}
-                    strokeEnabled={this.state.isSelected ? true : false}
-                  />
-
-                  <Rect
-                    width={80}
-                    height={80}
-                    x={20}
-                    y={20}
-                    cornerRadius={15}
-                    fill={"#ddd"}
-                  />
-
-                  <Text
-                    text={this.toolNode.name}
-                    fontFamily={'Poppins Regular'}
-                    fontSize={30}
-                    x={120}
-                    y={45}
-                  />
-                  
-                  
-                </Group>
-              )
-            })}
-            <Group
-              draggable
-              onDragStart={() => {
-                this.setState({
-                  isDragging: true
-                });
-              }}
-              onDragEnd={e => {
-                this.setState({
-                  isDragging: false,
-                  x: e.target.x(),
-                  y: e.target.y()
-                });
-              }}
-              x={this.state.x}
-              y={this.state.y}
-              onClick={() => {
-                this.setState({
-                  isSelected: this.state.isSelected ? false : true,
-                })
-              }}>
-              <Group visible={this.state.isSelected ? true : false} name='circleGroup'>
-                <Circle
-                  name='top'
-                  x={(this.toolNode.width / 2)}
-                  y={-this.toolNode.radius * 2}
-                  radius={this.toolNode.radius}
-                  fill={this.toolNode.selectColor}
-                />
-                <Circle
-                  name='bot'
-                  x={(this.toolNode.width / 2)}
-                  y={this.toolNode.height + this.toolNode.radius * 2}
-                  radius={this.toolNode.radius}
-                  fill={this.toolNode.selectColor}
-                />
-                <Circle
-                  name='left'
-                  x={- this.toolNode.radius * 2}
-                  y={this.toolNode.height/2}
-                  radius={this.toolNode.radius}
-                  fill={this.toolNode.selectColor}
-                />
-                <Circle
-                  name='right'
-                  x={(this.toolNode.width) + this.toolNode.radius * 2}
-                  y={this.toolNode.height/2}
-                  radius={this.toolNode.radius}
-                  fill={this.toolNode.selectColor}
-                />
-              </Group>
-
-              <Rect
-                width={this.toolNode.width}
-                height={this.toolNode.height}
-                cornerRadius={25}
-                fill={"white"}
-                stroke={this.toolNode.selectColor}
-                strokeWidth={1}
-                strokeEnabled={this.state.isSelected ? true : false}
-              />
-
-              <Rect
-                width={80}
-                height={80}
-                x={20}
-                y={20}
-                cornerRadius={15}
-                fill={"#ddd"}
-              />
-
-              <Text
-                text={this.toolNode.name}
-                fontFamily={'Poppins Regular'}
-                fontSize={30}
-                x={120}
-                y={45}
-              />
-              
-              
-            </Group>
-            <Group
-              draggable
-              onDragStart={() => {
-                this.setState({
-                  isDragging: true
-                });
-              }}
-              onDragEnd={e => {
-                this.setState({
-                  isDragging: false,
-                  x1: e.target.x(),
-                  y2: e.target.y()
-                });
-              }}
-              x={450}
-              y={450}
-              onClick={() => {
-                this.setState({
-                  isSelected: this.state.isSelected ? false : true,
-                })
-              }}>
-              <Group visible={this.state.isSelected ? true : false} name='circleGroup'>
-                <Circle
-                  name='top'
-                  x={(this.toolNode.width / 2)}
-                  y={-this.toolNode.radius * 2}
-                  radius={this.toolNode.radius}
-                  fill={this.toolNode.selectColor}
-                />
-                <Circle
-                  name='bot'
-                  x={(this.toolNode.width / 2)}
-                  y={this.toolNode.height + this.toolNode.radius * 2}
-                  radius={this.toolNode.radius}
-                  fill={this.toolNode.selectColor}
-                />
-                <Circle
-                  name='left'
-                  x={- this.toolNode.radius * 2}
-                  y={this.toolNode.height/2}
-                  radius={this.toolNode.radius}
-                  fill={this.toolNode.selectColor}
-                />
-                <Circle
-                  name='right'
-                  x={(this.toolNode.width) + this.toolNode.radius * 2}
-                  y={this.toolNode.height/2}
-                  radius={this.toolNode.radius}
-                  fill={this.toolNode.selectColor}
-                />
-              </Group>
-
-              <Rect
-                width={this.toolNode.width}
-                height={this.toolNode.height}
-                cornerRadius={25}
-                fill={"white"}
-                stroke={this.toolNode.selectColor}
-                strokeWidth={1}
-                strokeEnabled={this.state.isSelected ? true : false}
-              />
-
-              <Rect
-                width={80}
-                height={80}
-                x={20}
-                y={20}
-                cornerRadius={15}
-                fill={"#ddd"}
-              />
-
-              <Text
-                text={'Revit'}
-                fontFamily={'Poppins Regular'}
-                fontSize={30}
-                x={120}
-                y={45}
-              />
-              
-              
-            </Group>
-            <Line
-              onClick={() => {
-                this.setState({
-                  isSelected: this.state.isSelected ? false : true,
-                })
-              }}
-              points={[this.state.x + this.toolNode.width + this.toolNode.radius * 2,
-                this.state.y  + this.toolNode.height / 2,
-                this.state.x1 - this.toolNode.radius * 2,
-                this.state.y2 + this.toolNode.height / 2]}
-              stroke={this.state.isSelected ? this.toolNode.selectColor : 'grey'}
-              strokeWidth={this.toolNode.radius * 2}
-              opacity={1}
-              lineCap='round'
-            />
-          </Layer>
-          <Layer>
-
-          </Layer>
-        </Stage>   
-      </main>
-      );
+  function handleAnchorDragMove(e) {
+    const position = e.target.position();
+    const mousePos = getMousePos(e);
+    setConnectionPreview(
+      <Line
+        x={position.x}
+        y={position.y}
+        points={createConnectionPoints({ x: 0, y: 0 }, mousePos)}
+        stroke={NODE_SIZE.selectFill}
+        strokeWidth={3}
+      />
+    );
   }
-  
-}
 
+  function handleAnchorDragEnd(e, id) {
+    setConnectionPreview(null);
+    const stage = e.target.getStage();
+    const mousePos = stage.getPointerPosition();
+    const connectionTo = detectConnection(mousePos, id, nodes);
+    if (connectionTo !== null) {
+      setConnections([
+        ...connections,
+        {
+          to: connectionTo,
+          from: id
+        }
+      ]);
+    }
+  }
 
+  const nodeObjs = Object.keys(nodes).map((key) => {
+    const { x, y, name } = nodes[key];
+    return (
+      <Group
+        key={key}
+        x={x}
+        y={y}
+        onClick={() => handleSelection(key)}
+        draggable
+        onDragMove={(e) => handleNodeDrag(e, key)}
+        perfectDrawEnabled={false}
+      >
+        <Rect
+          width={NODE_SIZE.width}
+          height={NODE_SIZE.height}
+          cornerRadius={NODE_SIZE.cornerRadius}
+          fill={NODE_SIZE.fill}
+          shadowEnabled={true}
+          shadowOffset={{x:10, y:10}}
+          shadowBlur={10}
+          shadowOpacity={.1}
+        />
+        <Rect
+          width={NODE_SIZE.icon}
+          height={NODE_SIZE.icon}
+          cornerRadius={NODE_SIZE.cornerRadius}
+          x={NODE_SIZE.iconPosition}
+          y={NODE_SIZE.iconPosition}
+          fill={NODE_SIZE.iconFill}
+        />
+        <Text text={name} x={120} y={45} fontSize={30}/>
+      </Group>
+      
+    );
+  });
+  const connectionObjs = connections.map((connection) => {
+    const fromNode = nodes[connection.from];
+    const toNode = nodes[connection.to];
+    const lineEnd = {
+      x: toNode.x - fromNode.x,
+      y: toNode.y - fromNode.y
+    };
 
+    const deltaX = lineEnd.x;
+    const deltaY = lineEnd.y;
+    
+    const points = createConnectionPoints({ x: 0, y: 0 }, lineEnd, { x: 0, y: 0 }, { x: toNode.x, y: toNode.y});
+    return (
+      <Line
+        x={fromNode.x + NODE_SIZE.width / 2}
+        y={fromNode.y + NODE_SIZE.height / 2}
+        points={points}
+        stroke="grey"
+        strokeWidth={3}
+        //tension={.5}
+        bezier={true}
+      />
+    );
+  });
+  const borders =
+    selectedNode !== null ? (
+      <Border
+        id={selectedNode}
+        node={nodes[selectedNode]}
+        onAnchorDragEnd={(e) => handleAnchorDragEnd(e, selectedNode)}
+        onAnchorDragMove={handleAnchorDragMove}
+        onAnchorDragStart={handleAnchorDragStart}
+      />
+    ) : null;
+  return (
+    <Stage width={window.innerWidth} height={window.innerHeight}>
+      <Layer>
+        {connectionObjs}
+      </Layer>
+      <Layer>
+        {nodeObjs}
+        {borders}
+        {connectionPreview}
+        <Text x={20} y={20} fontSize={24} text="Click a Tool Node to select it. Drag the anchor to create a connection between other nodes" />
+
+      </Layer>
+    </Stage>
+  );
+};
 
 export default App;
-*/

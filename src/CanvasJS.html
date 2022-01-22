@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://unpkg.com/konva@8.3.2/konva.min.js"></script>
+    <meta charset="utf-8" />
+    <title>aec+tech Tool Diagram</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #f2f2f2;
+      }
+
+      #menu {
+        display: none;
+        position: absolute;
+        width: 60px;
+        background-color: white;
+        box-shadow: 0 0 5px grey;
+        border-radius: 3px;
+      }
+
+      #menu button {
+        width: 100%;
+        background-color: white;
+        border: none;
+        margin: 0;
+        padding: 10px;
+      }
+
+      #menu button:hover {
+        background-color: lightgray;
+      }
+
+      #instructions {
+        font-family: 'Poppins';
+        font-size: 25px;
+        font-weight: 400;
+        margin: 20px;
+        color: black;
+        position: absolute;
+        z-index: 100;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1 id='instructions'>Double-click to search tools</h1>
+    <div id="container"></div>
+    <div id="menu">
+      <div>
+          <input type="search">
+        <button id="pulse-button">Revit</button>
+        <button id="delete-button">Lumion</button>
+      </div>
+    </div>
+    <script>
+
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      function getRand(range) {
+          return (Math.floor(Math.random() * range));
+      };
+      var counter = 1;
+      var isDrawing = false;
+
+      var stage = new Konva.Stage({
+        container: 'container',
+        width: width,
+        height: height,
+        //draggable: true,
+      });
+
+      var layer = new Konva.Layer({
+        draggable: true,
+        scaleX: 1,
+        scaleY: 1,
+      });
+      var toolBar = new Konva.Layer();
+      stage.add(layer);
+
+      // Make node group elements
+      var toolNode = {
+        width: 300,
+        height: 120,
+        cornerRadius: 15,
+        radius: 8,
+        fill: 'white',
+        selectColor: '#ec008c',
+        names: ['Revit', 'Lumion', 'Enscape', "AutoCad", 'Sketchup', '3DS Max', 'Rhino', 'Grasshopper'],
+        groups: [],
+        points: [],
+      };
+
+      //manually add circle test
+      
+      var pointsData = {
+        x: 100,
+        y: 100,
+        x1: 150,
+        y1: 150,
+      };
+
+      var source = new Konva.Circle({
+        radius: 8,
+        fill: toolNode.selectColor,
+        x: pointsData.x,
+        y: pointsData.y,
+        //draggable: true,
+      });
+
+      var target = source.clone({
+        //draggable: true,
+        x: pointsData.x1,
+        y: pointsData.y1
+      });
+
+      var newLine = new Konva.Line({
+        points: [pointsData.x, pointsData.y, pointsData.x1, pointsData.y1],
+        stroke: 'grey',
+        strokeWidth: 8,
+        listening: false,
+      });
+
+      source.on('dragmove', (e) => {
+        pointsData.x = stage.getPointerPosition().x;
+        pointsData.y = stage.getPointerPosition().y;
+        layer.batchDraw();
+      });
+
+      //console.log(newLine.getPoints());
+
+      stage.on('dblclick dbltap', function () {
+        // add a new shape
+        var state = {
+          isSelected: false,
+        }
+        var centerX = toolNode.width / 2;
+        var centerY = toolNode.height / 2;
+
+        //console.log(centerX, centerY);
+        var newNode = new Konva.Group({
+          x: stage.getPointerPosition().x - centerX,
+          y: stage.getPointerPosition().y - centerY,
+          draggable: true,
+          id: counter + 1,
+        });
+
+        counter++;
+        toolNode.groups.push([newNode.id, newNode.x, newNode.y]);
+
+        var dots = new Konva.Group({
+
+        });
+
+        //console.log(toolNode.groups);
+        //Add tool node components
+        var toolRect = new Konva.Rect({
+          width: toolNode.width,
+          height: toolNode.height,
+          cornerRadius: toolNode.cornerRadius,
+          fill: toolNode.fill,
+          stroke: 'grey',
+        });
+
+        var toolIcon = new Konva.Rect({
+          width: 80,
+          height: 80,
+          x: 20,
+          y: 20,
+          cornerRadius: toolNode.cornerRadius,
+          fill: '#ddd',
+          listening: false,
+          strokeEnabled: false,
+        });
+
+        var circle1 = new Konva.Circle({
+          //listening: false,
+          radius: toolNode.radius,
+          visible: true,
+          fill: toolNode.selectColor,
+          strokeEnabled: false,
+          x: toolNode.width / 2,
+          y: -(toolNode.radius * 2),
+        });
+
+        var circle2 = circle1.clone({
+          y: toolNode.height + toolNode.radius * 2,
+        });
+
+        var circle3 = circle1.clone({
+          x: -(toolNode.radius * 2),
+          y: (toolNode.height / 2),
+        });
+
+        var circle4 = circle3.clone({
+          x: toolNode.width + toolNode.radius * 2,
+        });
+
+        var toolText = new Konva.Text({
+            text: toolNode.names[getRand(toolNode.names.length)],
+            fontSize: 30,
+            x: 120,
+            y: 45,
+            fill: 'black',
+            listenSing: false,
+        })
+        dots.add(circle1, circle2, circle3, circle4);
+        newNode.add(toolRect, toolIcon, toolText, dots);
+        //newNode.cache();
+
+        stage.on('click', function (e) {
+          if (e.target === stage) {
+            var shapes = stage.find('Rect');
+            shapes.forEach(function (shape) {
+              shape.stroke('grey');
+              state.isSelected = false;
+            });
+            return;
+          } else {
+            var shapes = stage.find('Rect');
+            shapes.forEach(function (shape) {
+              if (shape == e.target) {
+                return;
+              }
+              shape.stroke('grey');
+              state.isSelected = false;
+            });
+            e.target.stroke(state.isSelected ? 'grey' : toolNode.selectColor);
+            //console.log(state.isSelected);
+            state.isSelected = true;
+            //console.log(state.isSelected);
+          };
+
+          /*
+          circle1.on('mousedown', (e) => {
+            if (e.target == stage) {
+              return false;
+            }
+          
+            isDrawing = true;
+            var pos = {
+                x: circle1.getPointerPosition().x,
+                y: circle2.getPointerPosition().y,
+              };
+            var line = new Konva.Line({
+              points: [stage.getPointerPosition().x, stage.getPointerPosition().y, pos.X, pos.Y],
+              //tension: 0,
+              stroke: 'grey',
+              strokeWidth: 8,
+            });
+            layer.add(line).batchDraw();
+          });
+
+          stage.on('mouseup', (e) => {
+            isDrawing = false;
+            if (e.target == stage) {
+              //console.log(e.target)
+              //line.destroy();
+              layer.batchDraw();
+              //line = null;
+
+            } else {
+              //line = null;
+            };
+          });
+
+          stage.on('mousemove', (e) => {
+            if (!isDrawing) {
+              return false;
+            }
+            const newX = stage.getPointerPosition().x;
+            const newY = stage.getPointerPosition().y;
+            //console.log(newX, newY);
+            console.log(line);
+            layer.batchDraw();
+          });
+          */
+          layer.batchDraw();
+        });
+
+        let line1 = new Konva.Line()
+
+        var line;
+        stage.on('mousedown', (e) => {
+          if (e.target == stage) {
+            return false;
+          };
+          isDrawing = true;
+          dots.listening(false);
+          //e.target.fill(toolNode.selectColor);
+          posX = stage.getPointerPosition().x;
+          posY = stage.getPointerPosition().y;
+          var line = new Konva.Line({
+            listening: false,
+            points: [posX, posY, posX, posY],
+            stroke: 'grey',
+            strokeWidth: 8,
+          });
+          //console.log(line.attrs);
+          layer.add(line).batchDraw();
+        });
+
+        stage.on('mouseup', (e) => {
+          if (!line) {
+            return;
+          }
+          isDrawing = false;
+        });
+
+        stage.on('mousemove', (e) => {
+          if (!isDrawing) {
+            return false;
+          };
+          const newX = stage.getPointerPosition().x;
+          const newY = stage.getPointerPosition().y;
+          //console.log(newX, newY);
+          //console.log(line.points)
+          //const points = line.attrs.points().slice();
+          /* points[2] = newX;
+          points[3] = newY;
+          line.points(points);
+          console.log(line);
+          layer.batchDraw(); */
+        });
+
+
+
+        layer.add(newNode, target, source, newLine).batchDraw();
+      });
+
+      /*
+      // setup menu (tutorial)
+      let currentShape;
+      var menuNode = document.getElementById('menu');
+      document.getElementById('pulse-button').addEventListener('click', () => {
+        currentShape.to({
+          scaleX: 3,
+          scaleY: 3,
+          onFinish: () => {
+            currentShape.to({ scaleX: 1, scaleY: 1 });
+          },
+        });
+      });
+
+      document.getElementById('delete-button').addEventListener('click', () => {
+        currentShape.destroy();
+      });
+
+      window.addEventListener('click', () => {
+        // hide menu
+        menuNode.style.display = 'none';
+      });
+
+      stage.on('contextmenu', function (e) {
+        // prevent default behavior
+        e.evt.preventDefault();
+        if (e.target === stage) {
+          // if we are on empty place of the stage we will do nothing
+          return;
+        }
+        currentShape = e.target;
+        // show menu
+        menuNode.style.display = 'initial';
+        var containerRect = stage.container().getBoundingClientRect();
+        menuNode.style.top =
+          containerRect.top + stage.getPointerPosition().y + 4 + 'px';
+        menuNode.style.left =
+          containerRect.left + stage.getPointerPosition().x + 4 + 'px';
+      });
+      */
+
+    </script>
+  </body>
+</html>
