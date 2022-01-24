@@ -56,6 +56,7 @@ const App = () => {
     if (currentAnchor._id === 18) {
       console.log('Left Anchor', id);
       //setAnchorHover();
+      
     } else if (currentAnchor._id === 19) {
       console.log('Top Anchor', id);
     } else if (currentAnchor._id === 20) {
