@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Stage, Layer, Rect, Text, Line, Group } from 'react-konva';
+import { Stage, Layer, Rect, Text, Line, Group, Circle } from 'react-konva';
 import { Border } from "./Border";
 import { INITIAL_STATE, NODE_SIZE } from './NodeConfig';
 import './App.css';
@@ -82,13 +82,23 @@ const App = () => {
   function handleAnchorDragMove(e) {
     const position = e.target.position();
     const mousePos = getMousePos(e);
+    const controlPoint1 = {
+      x: 0,
+      y: 0
+    };
+
+    const controlPoint2 = {
+      x: mousePos.x,
+      y: 0
+    };
     setConnectionPreview(
       <Line
         x={position.x}
         y={position.y}
-        points={createConnectionPoints({ x: 0, y: 0 }, mousePos)}
+        points={createConnectionPoints({ x: 0, y: 0 }, mousePos, controlPoint1, controlPoint2)}
         stroke={NODE_SIZE.selectFill}
         strokeWidth={3}
+        bezier={true}
       />
     );
   }
@@ -152,10 +162,18 @@ const App = () => {
       y: toNode.y - fromNode.y
     };
 
-    const deltaX = lineEnd.x;
-    const deltaY = lineEnd.y;
-    
-    const points = createConnectionPoints({ x: 0, y: 0 }, lineEnd, { x: 0, y: 0 }, { x: toNode.x, y: toNode.y});
+    const controlPoint1 = {
+      x: 0,
+      y: 0
+    };
+
+    // Makes control point tracking run of new point -> on convex side of curve
+    const controlPoint2 = {
+      x: lineEnd.x,
+      y: 0
+    };
+
+    const points = createConnectionPoints({ x: 0, y: 0 }, lineEnd, controlPoint1, controlPoint2);
     return (
       <Line
         x={fromNode.x + NODE_SIZE.width / 2}
@@ -180,7 +198,7 @@ const App = () => {
     ) : null;
   return (
     <Stage width={window.innerWidth} height={window.innerHeight}>
-      <Layer>
+      <Layer name='connectionLines'>
         {connectionObjs}
       </Layer>
       <Layer>
@@ -188,7 +206,6 @@ const App = () => {
         {borders}
         {connectionPreview}
         <Text x={20} y={20} fontSize={24} text="Click a Tool Node to select it. Drag the anchor to create a connection between other nodes" />
-
       </Layer>
     </Stage>
   );
