@@ -40,9 +40,12 @@ function getAnchorPoints(x, y) {
 export function Border({
   node,
   id,
+  anchor,
   onAnchorDragStart,
   onAnchorDragMove,
-  onAnchorDragEnd
+  onAnchorDragEnd,
+  onAnchorMouseOver,
+  onAnchorMouseOut
 }) {
   const { x, y } = node;
   const anchorPoints = getAnchorPoints(x, y);
@@ -55,6 +58,9 @@ export function Border({
       onDragStart={onAnchorDragStart}
       onDragMove={onAnchorDragMove}
       onDragEnd={onAnchorDragEnd}
+      onMouseOver={onAnchorMouseOver}
+      onMouseOut={onAnchorMouseOut}
+      scaleAnchor={anchor}
     />
   ));
   return (

@@ -13,18 +13,20 @@ function dragBounds(ref) {
 }
 
 //Anchor points
-export function Anchor({ x, y, id, onDragMove, onDragEnd, onDragStart }) {
+export function Anchor({ x, y, id, onDragMove, onDragEnd, onDragStart, onMouseOver, onMouseOut, scaleAnchor}) {
     const anchor = useRef(null);
     return (
         <Circle
             x={x}
             y={y}
-            radius={NODE_SIZE.radius}
+            radius={scaleAnchor ? 12 : NODE_SIZE.radius}
             fill={NODE_SIZE.selectFill}
             draggable
             onDragStart={(e) => onDragStart(e, id)}
             onDragMove={(e) => onDragMove(e, id)}
             onDragEnd={(e) => onDragEnd(e, id)}
+            onMouseOver={(e) => onMouseOver(e, id)}
+            onMouseOut={(e) => onMouseOut(e, id)}
             dragBoundFunc={() => dragBounds(anchor)}
             perfectDrawEnabled={false}
             ref={anchor}

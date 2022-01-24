@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Stage, Layer, Rect, Text, Line, Group, Circle } from 'react-konva';
+import { Stage, Layer, Rect, Text, Line, Group } from 'react-konva';
 import { Border } from "./Border";
 import { INITIAL_STATE, NODE_SIZE } from './NodeConfig';
 import './App.css';
@@ -38,7 +38,9 @@ const App = () => {
   const [connectionPreview, setConnectionPreview] = useState(null);
   const [connections, setConnections] = useState([]);
   const [nodes, setNodes] = useState(INITIAL_STATE.nodes);
+  const [anchorHover, setAnchorHover] = useState(false);
 
+  // Select node
   function handleSelection(id) {
     if (selectedNode === id) {
       setSelectedNode(null);
@@ -47,6 +49,29 @@ const App = () => {
     }
   }
 
+  // Handle mouse position hovering over anchor
+  function handlesAnchorMouseOver(e, id) {
+    const currentAnchor = e.target;
+    //Checks which anchor point user is hovering over
+    if (currentAnchor._id === 18) {
+      console.log('Left Anchor', id);
+      //setAnchorHover();
+    } else if (currentAnchor._id === 19) {
+      console.log('Top Anchor', id);
+    } else if (currentAnchor._id === 20) {
+      console.log('Right Anchor', id);
+    } else {
+      console.log('Bottom Anchor', id);
+    }
+  
+  }
+
+  function handlesAnchorMouseOut(e) {
+    //console.log('Mouse leaving current node');
+    setAnchorHover(false);
+  }
+
+  // Move node on canvas
   function handleNodeDrag(e, key) {
     const position = e.target.position();
     setNodes({
@@ -199,9 +224,12 @@ const App = () => {
       <Border
         id={selectedNode}
         node={nodes[selectedNode]}
+        anchor={anchorHover}
         onAnchorDragEnd={(e) => handleAnchorDragEnd(e, selectedNode)}
         onAnchorDragMove={handleAnchorDragMove}
         onAnchorDragStart={handleAnchorDragStart}
+        onAnchorMouseOver={handlesAnchorMouseOver}
+        onAnchorMouseOut={handlesAnchorMouseOut}
       />
     ) : null;
   return (
