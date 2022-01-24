@@ -4,6 +4,7 @@ import { Border } from "./Border";
 import { INITIAL_STATE, NODE_SIZE } from './NodeConfig';
 import './App.css';
 
+// Returns connection points for connection line
 function createConnectionPoints(source, destination, control1=null, control2=null) {
   if (!control1 || !control2) {
     return [source.x, source.y, destination.x, destination.y];
@@ -21,6 +22,7 @@ function hasIntersection(position, node) {
   );
 }
 
+// Checks for existing connections between nodes, currently seems to allow for 2 connections between two nodes, source -> target and target -> source
 function detectConnection(position, id, nodes) {
   const intersectingNode = Object.keys(nodes).find((key) => {
     return key !== id && hasIntersection(position, nodes[key]);
@@ -56,6 +58,7 @@ const App = () => {
     });
   }
 
+  // Creates line upon dragging from anchor point
   function handleAnchorDragStart(e) {
     const position = e.target.position();
     setConnectionPreview(
@@ -69,6 +72,7 @@ const App = () => {
     );
   }
 
+  // Gets current mouse pointer location
   function getMousePos(e) {
     const position = e.target.position();
     const stage = e.target.getStage();
@@ -79,6 +83,7 @@ const App = () => {
     };
   }
 
+  // Updates line preview based on current mouse pointer location
   function handleAnchorDragMove(e) {
     const position = e.target.position();
     const mousePos = getMousePos(e);
@@ -103,6 +108,7 @@ const App = () => {
     );
   }
 
+  // Removes connection preview, if connection is detected set 'to' and 'from' nodes
   function handleAnchorDragEnd(e, id) {
     setConnectionPreview(null);
     const stage = e.target.getStage();
@@ -119,6 +125,7 @@ const App = () => {
     }
   }
 
+  // Create default nodes using NodeConfig information
   const nodeObjs = Object.keys(nodes).map((key) => {
     const { x, y, name } = nodes[key];
     return (
@@ -154,6 +161,7 @@ const App = () => {
       
     );
   });
+  // Connection lines between nodes
   const connectionObjs = connections.map((connection) => {
     const fromNode = nodes[connection.from];
     const toNode = nodes[connection.to];
@@ -164,7 +172,7 @@ const App = () => {
 
     const controlPoint1 = {
       x: 0,
-      y: 0
+      y: 0,
     };
 
     // Makes control point tracking run of new point -> on convex side of curve

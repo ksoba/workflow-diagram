@@ -6,12 +6,13 @@ import { NODE_SIZE } from "./NodeConfig";
 //Define Node sizes
 const width = NODE_SIZE.width;
 const height = NODE_SIZE.height;
-const points = [-5, -5, width + 5, -5, width + 5, height + 5, -5, height + 5, -5, -5];
+const borderShift = NODE_SIZE.radius;
+const points = [-borderShift, -borderShift, width + borderShift, -borderShift, width + borderShift, height + borderShift, -borderShift, height + borderShift, -borderShift, -borderShift];
 
 function getAnchorPoints(x, y) {
   const halfWidth = NODE_SIZE.width / 2;
   const halfHeight = NODE_SIZE.height / 2;
-  const anchorShift = NODE_SIZE.radius * 2
+  const anchorShift = NODE_SIZE.radius * 3
   return [
     {
       // Left anchor

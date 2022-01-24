@@ -12,7 +12,7 @@ function dragBounds(ref) {
     };
 }
 
-//Ancho
+//Anchor points
 export function Anchor({ x, y, id, onDragMove, onDragEnd, onDragStart }) {
     const anchor = useRef(null);
     return (
